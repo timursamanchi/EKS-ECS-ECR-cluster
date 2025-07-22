@@ -32,13 +32,19 @@ aws ecr get-login-password | docker login \
 ```
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
+  --no-cache \
   --push \
-  -t 040929397520.dkr.ecr.eu-west-1.amazonaws.com/quote-frontend ./quote-frontend
+  -t 040929397520.dkr.ecr.eu-west-1.amazonaws.com/quote-frontend \
+  ./quote-frontend
 
-timursamanchi@Timurs-Air EKS-ECS-ECR % docker buildx build \
-  --platform linux/amd64 \
+
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  --no-cache \
   --push \
-  -t 040929397520.dkr.ecr.eu-west-1.amazonaws.com/quote-backend ./quote-backend
+  -t 040929397520.dkr.ecr.eu-west-1.amazonaws.com/quote-backend \
+  ./quote-backend
+
 ```
 ## Create ECS Execution Role
 ```
@@ -77,3 +83,94 @@ http://localhost
 
 ```
 ## 2) Run inside ECS (cloud test)
+2️⃣ Run Inside ECS (Cloud Test)
+
+This means:
+
+    Launching a Fargate service
+
+    Assigning a public IP
+
+    Accessing via external IP (no localhost here)
+
+We’ll do this once you're ready to “walk” into cloud networking with ECS step-by-step.
+
+### i- create an ECS cluster
+```
+aws ecs create-cluster --cluster-name quote-cluster
+```
+
+### ii- Create the Fargate Service
+```
+aws ecs create-service \
+  --cluster quote-cluster \
+  --service-name quote-service \
+  --task-definition quote-task \
+  --desired-count 1 \
+  --launch-type FARGATE \
+  --network-configuration '{
+    "awsvpcConfiguration": {
+      "subnets": ["subnet-xxxxxxxx"],         # Your public subnet(s)
+      "securityGroups": ["sg-xxxxxxxx"],       # Must allow inbound 8080 or 80
+      "assignPublicIp": "ENABLED"
+    }
+  }'
+```
+
+### to creat the aws infrastructure
+
+#### create a vpc and tag it. 
+```
+  aws ec2 create-vpc \
+  --cidr-block 10.0.0.0/16 \
+  --tag-specifications 'ResourceType=vpc,Tags=[{Key=Name,Value=ecs-test-vpc}]'
+```
+
+#### create a public subnet and tag it - and then modify it for ingress rules ports 80 for the frontend and 8080 for the backend
+```
+aws ec2 create-subnet \
+  --vpc-id <your-vpc-id> \
+  --cidr-block 10.0.1.0/24 \
+  --availability-zone eu-west-1a \
+  --tag-specifications 'ResourceType=subnet,Tags=[{Key=Name,Value=subnet-pub}]'
+```
+#### modify to assign a public IP on launch
+```
+aws ec2 modify-subnet-attribute \
+  --subnet-id <your-subnet-id> \
+  --map-public-ip-on-launch
+
+```
+#### create security groups 
+```
+aws ec2 create-security-group \
+  --group-name quote-security-group \
+  --description "Allow inbound HTTP traffic" \
+  --vpc-id <your-vpc-id>
+```
+#### add port 80
+```
+aws ec2 authorize-security-group-ingress \
+  --group-id <your-security-group-id> \
+  --protocol tcp \
+  --port 80 \
+  --cidr 0.0.0.0/0
+
+```
+
+#### add port 8080
+```
+aws ec2 authorize-security-group-ingress \
+  --group-id <your-security-group-id> \
+  --protocol tcp \
+  --port 8080 \
+  --cidr 0.0.0.0/0
+
+```
+🔧 Plug Into Your ECS Service Command
+
+Replace:
+
+    "subnets": ["subnet-xxxxxxxx"] → with your public subnet ID. 
+
+    "securityGroups": ["sg-xxxxxxxx"] → with the new security group ID. 
