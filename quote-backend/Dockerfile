@@ -1,5 +1,9 @@
-# backend/Dockerfile
-# This Dockerfile is used to build the backend service for the application.
-FROM datawire/quote:0.5.0
+FROM public.ecr.aws/docker/library/golang:1.20-alpine:latest
 
-EXPOSE  8080
+WORKDIR /app
+COPY quote-server.go .
+
+RUN go build -o qotm quote-server.go
+EXPOSE 8080
+
+CMD ["./qotm"]
