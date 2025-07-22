@@ -5,12 +5,12 @@ K0s cluster on AWS using EKS, ECS, ESR
 
 # 🚀 Full ECS + ECR Deployment Steps
 Step	Task
-1️⃣	Create ECR repositories
-2️⃣	Authenticate Docker to ECR
-3️⃣	Build and push multi-arch Docker images
-4️⃣	Create IAM execution role for ECS tasks
-5️⃣	Define ECS Fargate-compatible task definition
-6️⃣	Launch ECS service on Fargate
+1️⃣	Create ECR repositories. 
+2️⃣	Authenticate Docker to ECR. 
+3️⃣	Build and push multi-arch Docker images. 
+4️⃣	Create IAM execution role for ECS tasks. 
+5️⃣	Define ECS Fargate-compatible task definition. 
+6️⃣	Launch ECS service on Fargate. 
 
 
 aws ecr create-repository --repository-name quote-frontend
