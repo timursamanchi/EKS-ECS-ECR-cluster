@@ -12,10 +12,10 @@ K0s cluster on AWS using EKS, ECS, ESR
     5️⃣	Define ECS Fargate-compatible task definition. 
     6️⃣	Launch ECS service on Fargate. 
 
-
+```
 aws ecr create-repository --repository-name quote-frontend
 aws ecr create-repository --repository-name quote-backend
-
+```
 ## get my aws account number
 aws sts get-caller-identity --query Account --output text
 
