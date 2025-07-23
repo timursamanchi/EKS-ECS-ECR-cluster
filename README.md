@@ -19,21 +19,24 @@ export SUBNET_CIDR=10.0.1.0/24
 export CLUSTER_NAME=quote-app-cluster
 export BACKEND_PORT=8080
 export FRONTEND_PORT=80
+```
 
 ✅ to Make Them Persistent If you want these to persist between terminal sessions, you can add the export lines to your shell config file Zsh: ~/.zshrc
-
+```
 echo 'export AWS_REGION=eu-west-1' >> ~/.bashrc
 source ~/.bashrc
+```
 
-✅ How to Check They're Set
+✅ How to Check They're Set: After running the export commands, 
 
-After running the export commands, run:
-
+run:
+```
 echo $AWS_REGION
 echo $VPC_CIDR
+```
 
 You should see:
-
+```
 eu-west-1
 10.0.0.0/16
 ```
