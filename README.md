@@ -90,15 +90,50 @@ this should retrieve this output
 
 ### 1.6 - 🔐 Create Security Group with Ingress Rules: Allow 80 (frontend) and Allow 8080 (backend)
 ```
-SG_ID=$(aws ec2 create-security-group   --group-name quote-sg   --description "Allow HTTP ports"   --vpc-id $VPC_ID   --query 'GroupId' --output text)
+SG_ID=$(aws ec2 create-security-group --group-name quote-sg --description "Allow HTTP ports" --vpc-id $VPC_ID --query 'GroupId' --output text)
 
 aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 80 --cidr 0.0.0.0/0
 
 aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 8080 --cidr 0.0.0.0/0
 ```
+this should retrieve this output
+```
+{
+    "Return": true,
+    "SecurityGroupRules": [
+        {
+            "SecurityGroupRuleId": "sgr-06356f28a121d0347",
+            "GroupId": "sg-0b0726db549a819ed",
+            "GroupOwnerId": "040929397520",
+            "IsEgress": false,
+            "IpProtocol": "tcp",
+            "FromPort": 80,
+            "ToPort": 80,
+            "CidrIpv4": "0.0.0.0/0",
+            "SecurityGroupRuleArn": "arn:aws:ec2:eu-west-1:040929397520:security-group-rule/sgr-06356f28a121d0347"
+        }
+    ]
+}
+{
+    "Return": true,
+    "SecurityGroupRules": [
+        {
+            "SecurityGroupRuleId": "sgr-09747fd359ff6c90b",
+            "GroupId": "sg-0b0726db549a819ed",
+            "GroupOwnerId": "040929397520",
+            "IsEgress": false,
+            "IpProtocol": "tcp",
+            "FromPort": 8080,
+            "ToPort": 8080,
+            "CidrIpv4": "0.0.0.0/0",
+            "SecurityGroupRuleArn": "arn:aws:ec2:eu-west-1:040929397520:security-group-rule/sgr-09747fd359ff6c90b"
+        }
+    ]
+}
+```
 
 ### 1.7 - 🤖 IAM Execution Role for ECS Tasks
-```bash
+```
 aws iam create-role --role-name ecsTaskExecutionRole   --assume-role-policy-document '{
     "Version": "2012-10-17",
     "Statement": [{
