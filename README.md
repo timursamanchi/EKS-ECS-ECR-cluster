@@ -61,12 +61,11 @@ aws ec2 create-tags --resources $SUBNET_ID --tags Key=Name,Value=subnet-pub
 aws ec2 modify-subnet-attribute --subnet-id $SUBNET_ID --map-public-ip-on-launch
 ```
 
-### 1.4 - Create and attach Internet Gateway
+### 1.4 - Create, tag and attach Internet Gateway
 ```
 IGW_ID=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
 aws ec2 attach-internet-gateway --internet-gateway-id $IGW_ID --vpc-id $VPC_ID
 
-Tag the Internet Gateway
 aws ec2 create-tags --resources $IGW_ID --tags Key=Name,Value=ecs-igw
 ```
 
