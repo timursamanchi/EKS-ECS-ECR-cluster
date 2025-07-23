@@ -43,7 +43,7 @@ eu-west-1
 
 ## 1. 🧱 Create VPC networking (or use existing)
 
-we'll need:
+we'll need:  
     - A vpc and one or more Subnet IDs. 
 
     - A Security Group. 
