@@ -206,7 +206,7 @@ curl --fail http://$FRONTEND_IP:$FRONTEND_PORT || echo "❌ Frontend curl failed
 - Frontend (HTML page): `http://<frontend-public-ip>`
 
 ## 7. ✅ ALB Architecture 
-
+```
 High level archtecture view of the ALB build:
 
            ┌──────────────────────────┐
@@ -222,11 +222,11 @@ High level archtecture view of the ALB build:
    │ Backend:8080  │         │ Frontend:80     │
    └───────────────┘         └─────────────────┘
          ECS Backend              ECS Frontend
+```
+Key Idea:  
 
-Key Idea:
+  Frontend = serves UI (HTML) via http://alb-dns/ 
 
-    Frontend = serves UI (HTML) via http://alb-dns/
-
-    Backend = serves API (JSON) via http://alb-dns/api
+  Backend = serves API (JSON) via http://alb-dns/api. 
 
 ### 🪜 Steps to Add ALB 
