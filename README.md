@@ -75,6 +75,18 @@ RT_ID=$(aws ec2 create-route-table --vpc-id $VPC_ID --query 'RouteTable.RouteTab
 aws ec2 create-route --route-table-id $RT_ID --destination-cidr-block 0.0.0.0/0 --gateway-id $IGW_ID
 aws ec2 associate-route-table --route-table-id $RT_ID --subnet-id $SUBNET_ID
 ```
+this should retrieve this output
+```
+{
+    "Return": true
+}
+{
+    "AssociationId": "rtbassoc-01afe7a73da7f0686",
+    "AssociationState": {
+        "State": "associated"
+    }
+}
+```
 
 ### 1.6 - 🔐 Create Security Group with Ingress Rules
 ```bash
