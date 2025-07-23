@@ -1,0 +1,20 @@
+{
+  "family": "quote-frontend-task",
+  "networkMode": "awsvpc",
+  "containerDefinitions": [
+    {
+      "name": "quote-frontend",
+      "image": "040929397520.dkr.ecr.eu-west-1.amazonaws.com/aws-quote-frontend:latest",
+      "portMappings": [
+        {
+          "containerPort": 80,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true
+    }
+  ],
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512"
+}

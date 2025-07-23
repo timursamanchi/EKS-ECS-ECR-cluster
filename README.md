@@ -1,53 +1,103 @@
-# EKS-ECS-ECR-cluster
-K0s cluster on AWS using EKS, ECS, ESR
+# installing full ECS solution
 
+The following commands are to set up the underpinning infastructure 
 
+## ✅ This sets up temporary environment variables in your current shell session.
+```
+export AWS_REGION=eu-west-1
+export VPC_CIDR=10.0.0.0/16
+export SUBNET_CIDR=10.0.1.0/24
+export CLUSTER_NAME=quote-app-cluster
+export BACKEND_PORT=8080
+export FRONTEND_PORT=80
 
-# 🚀 Full ECS + ECR Deployment Steps
-    Step	Task. 
-    1️⃣	Create ECR repositories. 
-    2️⃣	Authenticate Docker to ECR. 
-    3️⃣	Build and push multi-arch Docker images. 
-    4️⃣	Create IAM execution role for ECS tasks. 
-    5️⃣	Define ECS Fargate-compatible task definition. 
-    6️⃣	Launch ECS service on Fargate. 
+✅ to Make Them Persistent If you want these to persist between terminal sessions, you can add the export lines to your shell config file Zsh: ~/.zshrc
+
+echo 'export AWS_REGION=eu-west-1' >> ~/.bashrc
+source ~/.bashrc
+
+✅ How to Check They're Set
+
+After running the export commands, run:
+
+echo $AWS_REGION
+echo $VPC_CIDR
+
+You should see:
+
+eu-west-1
+10.0.0.0/16
+```
+
+## 1. 🧱 Create VPC networking (or use existing)
+
+we'll need:
+    - A vpc and one or more Subnet IDs. 
+
+    - A Security Group. 
+    
+    - The subnets must be in public subnets with Internet Gateway access, and SG must allow inbound HTTP (80) and backend port (8080) if testing directly.  
+
+### 1.1- create a vpc and tag it. 
+```
+# Create VPC
+VPC_ID=$(aws ec2 create-vpc --cidr-block $VPC_CIDR \
+  --query 'Vpc.VpcId' --output text)
+aws ec2 create-tags --resources $VPC_ID --tags Key=Name,Value=ecs-test-vpc
+```
+
+### 1.2- create a public subnet and tag it 
+```
+# Create Subnet
+SUBNET_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID \
+  --cidr-block $SUBNET_CIDR \
+  --availability-zone ${AWS_REGION}a \
+  --query 'Subnet.SubnetId' --output text)
+aws ec2 create-tags --resources $SUBNET_ID --tags Key=Name,Value=subnet-pub
+```
+
+### 1.3- modify to assign a public IP on launch
+```
+# Enable auto-assign public IP
+aws ec2 modify-subnet-attribute --subnet-id $SUBNET_ID --map-public-ip-on-launch
+```
+
+### 1.4- create and attach IGW to VPC
+```
+# Create Internet Gateway and attach to VPC
+IGW_ID=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
+aws ec2 attach-internet-gateway --internet-gateway-id $IGW_ID --vpc-id $VPC_ID
+```
+
+### 1.5- create Route Table and default route
+```
+RT_ID=$(aws ec2 create-route-table --vpc-id $VPC_ID --query 'RouteTable.RouteTableId' --output text)
+aws ec2 create-route --route-table-id $RT_ID --destination-cidr-block 0.0.0.0/0 --gateway-id $IGW_ID
+aws ec2 associate-route-table --route-table-id $RT_ID --subnet-id $SUBNET_ID
+```
+
+### 1.6- 🔐 create security groups - and then modify it for ingress rules ports 80 for the frontend and 8080 for the backend
+```
+# Create SG
+SG_ID=$(aws ec2 create-security-group \
+  --group-name quote-sg \
+  --description "Allow HTTP ports" \
+  --vpc-id $VPC_ID \
+  --query 'GroupId' --output text)
+
+# Allow 80 (frontend)
+aws ec2 authorize-security-group-ingress \
+  --group-id $SG_ID --protocol tcp --port 80 --cidr 0.0.0.0/0
+
+# Allow 8080 (backend)
+aws ec2 authorize-security-group-ingress \
+  --group-id $SG_ID --protocol tcp --port 8080 --cidr 0.0.0.0/0
 
 ```
-aws ecr create-repository --repository-name quote-frontend
-aws ecr create-repository --repository-name quote-backend
-```
-## get my aws account number
-```
-aws sts get-caller-identity --query Account --output text
-```
 
-## authenicate and link you dockerhub account to your aws account
+### 1.7 🤖 IAM Execution Role for ECS Tasks
 ```
-aws ecr get-login-password | docker login \
-  --username AWS \
-  --password-stdin 040929397520.dkr.ecr.eu-west-1.amazonaws.com
-```
-
-## build and push multi arch image to docker/ecr
-```
-docker buildx build \
-  --platform linux/amd64,linux/arm64 \
-  --no-cache \
-  --push \
-  -t 040929397520.dkr.ecr.eu-west-1.amazonaws.com/quote-frontend \
-  ./quote-frontend
-
-
-docker buildx build \
-  --platform linux/amd64,linux/arm64 \
-  --no-cache \
-  --push \
-  -t 040929397520.dkr.ecr.eu-west-1.amazonaws.com/quote-backend \
-  ./quote-backend
-
-```
-## Create ECS Execution Role
-```
+# create IAM ECS Execution Role
 aws iam create-role --role-name ecsTaskExecutionRole \
   --assume-role-policy-document '{
     "Version": "2012-10-17",
@@ -57,120 +107,93 @@ aws iam create-role --role-name ecsTaskExecutionRole \
       "Action": "sts:AssumeRole"
     }]
   }'
-```
-## Attach ECS task execution policy
-```
+
+# Attach ECS task execution policy
 aws iam attach-role-policy \
   --role-name ecsTaskExecutionRole \
   --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
 ```
-## register task-definition with ECS
+
+## 🛠️ 2. Task Definitions (Backend + Frontend) - Save each JSON to a file and register.
+
+quote-backend-task.json
 ```
-  aws ecs register-task-definition --cli-input-json file://quote-task-def.json
-```
-
-## 1) Run Locally (Quick Test)
-```
-docker pull 040929397520.dkr.ecr.eu-west-1.amazonaws.com/quote-backend:latest
-docker run -p 8080:8080 040929397520.dkr.ecr.eu-west-1.amazonaws.com/quote-backend
-curl http://localhost:8080
-
-
-docker pull 040929397520.dkr.ecr.eu-west-1.amazonaws.com/quote-frontend:latest
-docker run -p 80:80 040929397520.dkr.ecr.eu-west-1.amazonaws.com/quote-frontend
-docker run -d --name quote-frontend --link quote-backend -p 80:80 040929397520.dkr.ecr.eu-west-1.amazonaws.com/quote-frontend:latest
-http://localhost
-
-```
-## 2) Run inside ECS (cloud test)
-2️⃣ Run Inside ECS (Cloud Test)
-
-This means:
-
-    Launching a Fargate service
-
-    Assigning a public IP
-
-    Accessing via external IP (no localhost here)
-
-We’ll do this once you're ready to “walk” into cloud networking with ECS step-by-step.
-
-### i- create an ECS cluster
-```
-aws ecs create-cluster --cluster-name quote-cluster
+{
+  "family": "quote-backend-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::<your-account-id>:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "quote-backend",
+      "image": "040929397520.dkr.ecr.eu-west-1.amazonaws.com/aws-quote-backend:latest",
+      "portMappings": [{ "containerPort": 8080 }]
+    }
+  ]
+}
 ```
 
-### ii- Create the Fargate Service
+quote-frontend-task.json
+```
+{
+  "family": "quote-frontend-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::<your-account-id>:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "quote-frontend",
+      "image": "040929397520.dkr.ecr.eu-west-1.amazonaws.com/aws-quote-frontend:latest",
+      "portMappings": [{ "containerPort": 80 }]
+    }
+  ]
+}
+```
+
+Register the task definitions
+```
+aws ecs register-task-definition --cli-input-json file://quote-backend-task.json
+aws ecs register-task-definition --cli-input-json file://quote-frontend-task.json
+
+each command will return a task definition arn like so:
+
+arn:aws:ecs:eu-west-1:040929397520:task-definition/quote-backend-task:1
+```
+
+## 🧩 2. Create the cluster
+```
+aws ecs create-cluster --cluster-name quote-app-cluster-copilot
+
+or
+
+aws ecs create-cluster --cluster-name $CLUSTER_NAME
+```
+
+## 🚀 3. Create Fargate Services
+
+Backend service
 ```
 aws ecs create-service \
-  --cluster quote-cluster \
-  --service-name quote-service \
-  --task-definition quote-task \
+  --cluster $CLUSTER_NAME \
+  --service-name quote-backend-service \
+  --task-definition quote-backend-task \
   --desired-count 1 \
   --launch-type FARGATE \
-  --network-configuration '{
-    "awsvpcConfiguration": {
-      "subnets": ["subnet-xxxxxxxx"],         # Your public subnet(s)
-      "securityGroups": ["sg-xxxxxxxx"],       # Must allow inbound 8080 or 80
-      "assignPublicIp": "ENABLED"
-    }
-  }'
+  --network-configuration "awsvpcConfiguration={subnets=[$SUBNET_ID],securityGroups=[$SG_ID],assignPublicIp=ENABLED}"
 ```
 
-### to creat the aws infrastructure
-
-#### create a vpc and tag it. 
+Frontend service
 ```
-  aws ec2 create-vpc \
-  --cidr-block 10.0.0.0/16 \
-  --tag-specifications 'ResourceType=vpc,Tags=[{Key=Name,Value=ecs-test-vpc}]'
+# Frontend service
+aws ecs create-service \
+  --cluster $CLUSTER_NAME \
+  --service-name quote-frontend-service \
+  --task-definition quote-frontend-task \
+  --desired-count 1 \
+  --launch-type FARGATE \
+  --network-configuration "awsvpcConfiguration={subnets=[$SUBNET_ID],securityGroups=[$SG_ID],assignPublicIp=ENABLED}"
 ```
-
-#### create a public subnet and tag it - and then modify it for ingress rules ports 80 for the frontend and 8080 for the backend
-```
-aws ec2 create-subnet \
-  --vpc-id <your-vpc-id> \
-  --cidr-block 10.0.1.0/24 \
-  --availability-zone eu-west-1a \
-  --tag-specifications 'ResourceType=subnet,Tags=[{Key=Name,Value=subnet-pub}]'
-```
-#### modify to assign a public IP on launch
-```
-aws ec2 modify-subnet-attribute \
-  --subnet-id <your-subnet-id> \
-  --map-public-ip-on-launch
-
-```
-#### create security groups 
-```
-aws ec2 create-security-group \
-  --group-name quote-security-group \
-  --description "Allow inbound HTTP traffic" \
-  --vpc-id <your-vpc-id>
-```
-#### add port 80
-```
-aws ec2 authorize-security-group-ingress \
-  --group-id <your-security-group-id> \
-  --protocol tcp \
-  --port 80 \
-  --cidr 0.0.0.0/0
-
-```
-
-#### add port 8080
-```
-aws ec2 authorize-security-group-ingress \
-  --group-id <your-security-group-id> \
-  --protocol tcp \
-  --port 8080 \
-  --cidr 0.0.0.0/0
-
-```
-🔧 Plug Into Your ECS Service Command
-
-Replace:
-
-    "subnets": ["subnet-xxxxxxxx"] → with your public subnet ID. 
-
-    "securityGroups": ["sg-xxxxxxxx"] → with the new security group ID. 
