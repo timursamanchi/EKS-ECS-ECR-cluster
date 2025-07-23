@@ -204,3 +204,29 @@ curl --fail http://$FRONTEND_IP:$FRONTEND_PORT || echo "❌ Frontend curl failed
 ## 📅 Bonus: Manual Browser Test
 - Backend (API): `http://<backend-public-ip>:8080`
 - Frontend (HTML page): `http://<frontend-public-ip>`
+
+## 7. ✅ ALB Architecture 
+
+High level archtecture view of the ALB build:
+
+           ┌──────────────────────────┐
+           │     Application Load     │
+           │        Balancer (ALB)    │
+           └────────────┬─────────────┘
+                        │
+           ┌────────────┴─────────────┐
+           │                          │
+   ┌───────▼───────┐         ┌────────▼────────┐
+   │  Target Group │         │  Target Group   │
+   │ for /api/*    │         │ for / (default) │
+   │ Backend:8080  │         │ Frontend:80     │
+   └───────────────┘         └─────────────────┘
+         ECS Backend              ECS Frontend
+
+Key Idea:
+
+    Frontend = serves UI (HTML) via http://alb-dns/
+
+    Backend = serves API (JSON) via http://alb-dns/api
+
+### 🪜 Steps to Add ALB 
