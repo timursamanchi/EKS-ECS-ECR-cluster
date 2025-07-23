@@ -39,9 +39,10 @@ eu-west-1
 
 ## 1. 🧱 Create VPC networking (or use existing)
 
-- A VPC and one or more Subnet IDs.
-- A Security Group.
-- The subnet must be public (with IGW access), SG must allow inbound HTTP (80) and backend port (8080).
+prereqs: we need the follow;
+- a VPC and one or more Subnet IDs.
+- a security group SG.
+- the subnet must be public (with IGW access), SG must allow inbound HTTP (80) and backend port (8080).
 
 ### 1.1 - Create a VPC and tag it.
 ```bash
