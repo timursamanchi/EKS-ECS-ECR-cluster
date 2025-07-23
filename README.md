@@ -9,9 +9,9 @@
     6️⃣	Launch ECS service on Fargate. 
 
 
-The following commands are to set up the underpinning infastructure 
+## ✅ Set up the underpinning aws infastructure 
 
-## ✅ This sets up temporary environment variables in your current shell session.
+sets up temporary environment variables in your current shell session.
 ```
 export AWS_REGION=eu-west-1
 export VPC_CIDR=10.0.0.0/16
