@@ -210,3 +210,87 @@ aws ecs create-service \
   --launch-type FARGATE \
   --network-configuration "awsvpcConfiguration={subnets=[$SUBNET_ID],securityGroups=[$SG_ID],assignPublicIp=ENABLED}"
 ```
+## ✅ 🔍 4. Post-Deployment Health Checks (Styled)
+```
+#!/bin/zsh
+# Check backend service status
+
+echo "🔎 Checking backend service status..."
+aws ecs describe-services \
+  --cluster $CLUSTER_NAME \
+  --services quote-backend-service \
+  --query "services[*].deployments[*].{status:status, running:runningCount, pending:pendingCount}" \
+  --output table
+
+# Check frontend service status
+echo "🔎 Checking frontend service status..."
+aws ecs describe-services \
+  --cluster $CLUSTER_NAME \
+  --services quote-frontend-service \
+  --query "services[*].deployments[*].{status:status, running:runningCount, pending:pendingCount}" \
+  --output table
+
+```
+Output Example
+-----------------------------------------------------
+|                DescribeServices                   |
++-----------+---------+---------+
+|  status   | running | pending |
++-----------+---------+---------+
+| PRIMARY   |   1     |    0    |
++-----------+---------+---------+
+
+
+## 🔍 5. post-deployment tests: Public IP + curl Test (Backend + Frontend)
+Add this to the bottom of your deployment script or run seperately:
+
+```
+# 🔍 Function to get public IP of ECS task
+get_public_ip() {
+  local CLUSTER=$1
+  local SERVICE=$2
+
+  TASK_ARN=$(aws ecs list-tasks --cluster $CLUSTER --service-name $SERVICE --query 'taskArns[0]' --output text)
+  ENI_ID=$(aws ecs describe-tasks --cluster $CLUSTER --tasks $TASK_ARN \
+    --query "tasks[0].attachments[0].details[?name=='networkInterfaceId'].value" --output text)
+  PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids $ENI_ID \
+    --query "NetworkInterfaces[0].Association.PublicIp" --output text)
+
+  echo $PUBLIC_IP
+}
+
+# 🟡 Get and test backend
+BACKEND_IP=$(get_public_ip $CLUSTER_NAME quote-backend-service)
+echo "🌐 Backend Public IP: $BACKEND_IP"
+echo "⌛ Waiting 5 seconds for backend to warm up..."
+sleep 5
+curl --fail http://$BACKEND_IP:$BACKEND_PORT || echo "❌ Backend curl failed"
+
+# 🔵 Get and test frontend
+FRONTEND_IP=$(get_public_ip $CLUSTER_NAME quote-frontend-service)
+echo "🌐 Frontend Public IP: $FRONTEND_IP"
+echo "⌛ Waiting 5 seconds for frontend to warm up..."
+sleep 5
+curl --fail http://$FRONTEND_IP:$FRONTEND_PORT || echo "❌ Frontend curl failed"
+
+```
+
+✅ What This Does:
+
+    Queries the ECS service for its running task.
+
+    Gets the attached ENI (network interface).
+
+    Extracts the public IP from that ENI.
+
+    Performs a curl HTTP test on that IP and port (80 or 8080).
+
+✅ Bonus: Manual Browser Test
+
+You can also paste the IPs into your browser:
+
+    Backend (API):
+    http://<backend-public-ip>:8080
+
+    Frontend (HTML page):
+    http://<frontend-public-ip>
