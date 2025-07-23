@@ -1,4 +1,13 @@
-# installing full ECS solution
+# 🚀 Full ECS + ECR Deployment Steps
+
+    Step	Task. 
+    1️⃣	Create ECR repositories. 
+    2️⃣	Authenticate Docker to ECR. 
+    3️⃣	Build and push multi-arch Docker images. 
+    4️⃣	Create IAM execution role for ECS tasks. 
+    5️⃣	Define ECS Fargate-compatible task definition. 
+    6️⃣	Launch ECS service on Fargate. 
+
 
 The following commands are to set up the underpinning infastructure 
 
