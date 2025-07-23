@@ -63,14 +63,11 @@ aws ec2 modify-subnet-attribute --subnet-id $SUBNET_ID --map-public-ip-on-launch
 
 ### 1.4 - Create and attach Internet Gateway
 ```
-# Create Internet Gateway
 IGW_ID=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
+aws ec2 attach-internet-gateway --internet-gateway-id $IGW_ID --vpc-id $VPC_ID
 
 # Tag the Internet Gateway
 aws ec2 create-tags --resources $IGW_ID --tags Key=Name,Value=ecs-igw
-
-# Attach it to the VPC
-aws ec2 attach-internet-gateway --internet-gateway-id $IGW_ID --vpc-id $VPC_ID
 ```
 
 ### 1.5 - Create Route Table and add default route
