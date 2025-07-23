@@ -44,8 +44,9 @@ eu-west-1
 ## 1. 🧱 Create VPC networking (or use existing)
 
 we'll need:  
-    - A vpc and one or more Subnet IDs. 
 
+    - A vpc and one or more Subnet IDs.
+    
     - A Security Group. 
     
     - The subnets must be in public subnets with Internet Gateway access, and SG must allow inbound HTTP (80) and backend port (8080) if testing directly.  
