@@ -99,7 +99,7 @@ aws iam create-role --role-name ecsTaskExecutionRole   --assume-role-policy-docu
 aws iam attach-role-policy   --role-name ecsTaskExecutionRole   --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
 ```
 
-## 🛠️ 2. Task Definitions (Backend + Frontend) - Save and Register
+## 🛠️ 2. ECS Task Definitions (Backend + Frontend) - Save and Register
 
 ```bash
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
