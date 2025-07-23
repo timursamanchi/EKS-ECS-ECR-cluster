@@ -193,6 +193,12 @@ EXECUTION_ROLE_ARN="arn:aws:iam::$ACCOUNT_ID:role/ecsTaskExecutionRole"
 
 ### Register the task definitions
 ```bash
+export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+export EXECUTION_ROLE_ARN="arn:aws:iam::$ACCOUNT_ID:role/ecsTaskExecutionRole"
+
+echo "account ID: " $ACCOUNT_ID 
+echo $EXECUTION_ROLE_ARN
+
 envsubst < quote-backend-task.json > backend-resolved.json
 envsubst < quote-frontend-task.json > frontend-resolved.json
 
