@@ -1,4 +1,4 @@
-# 🚀 Full ECS + ECR Deployment Steps
+# 🚀 Full ECS + ECR Deployment Steps for now - later with using copilot
 
     Step	Task. 
     1️⃣	Create ECR repositories. 
