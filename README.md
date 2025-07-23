@@ -88,14 +88,12 @@ this should retrieve this output
 }
 ```
 
-### 1.6 - 🔐 Create Security Group with Ingress Rules
-```bash
+### 1.6 - 🔐 Create Security Group with Ingress Rules: Allow 80 (frontend) and Allow 8080 (backend)
+```
 SG_ID=$(aws ec2 create-security-group   --group-name quote-sg   --description "Allow HTTP ports"   --vpc-id $VPC_ID   --query 'GroupId' --output text)
 
-# Allow 80 (frontend)
 aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 80 --cidr 0.0.0.0/0
 
-# Allow 8080 (backend)
 aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 8080 --cidr 0.0.0.0/0
 ```
 
