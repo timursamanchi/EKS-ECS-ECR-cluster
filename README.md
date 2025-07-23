@@ -66,7 +66,7 @@ aws ec2 modify-subnet-attribute --subnet-id $SUBNET_ID --map-public-ip-on-launch
 IGW_ID=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
 aws ec2 attach-internet-gateway --internet-gateway-id $IGW_ID --vpc-id $VPC_ID
 
-# Tag the Internet Gateway
+Tag the Internet Gateway
 aws ec2 create-tags --resources $IGW_ID --tags Key=Name,Value=ecs-igw
 ```
 
